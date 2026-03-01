@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const defaultMaxRandomKey31GenAttempts = 6
+
 // generateRandomKey31 create 31 bits random key.
 func generateRandomKey31() (randomKey int32) {
 	buf := make([]byte, 4)
@@ -16,8 +18,8 @@ func generateRandomKey31() (randomKey int32) {
 
 // GenerateNonZeroRandomKey31 creates non-zero 31 bits random key.
 // Return 1 if all attempts fail to generate non-zero random key.
-func GenerateNonZeroRandomKey31(maxAttempts int) (randomKey int32) {
-	remain := maxAttempts - 1
+func GenerateNonZeroRandomKey31() (randomKey int32) {
+	remain := defaultMaxRandomKey31GenAttempts - 1
 	for remain > 0 {
 		if randomKey = generateRandomKey31(); randomKey != 0 {
 			return
