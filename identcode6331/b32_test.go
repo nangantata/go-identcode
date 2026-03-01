@@ -1,0 +1,36 @@
+package identcode6331
+
+import (
+	"math"
+	"math/rand/v2"
+	"testing"
+)
+
+func TestPackUnpackB32(t *testing.T) {
+	prefixText := "test-"
+	seed := []byte("test-seed")
+	identMasks := MakeIdentMask(seed)
+	dV := []int64{
+		0,
+		1,
+		2,
+		1234567890,
+		math.MaxInt64,
+	}
+	for range 256 {
+		dV = append(dV, rand.Int64())
+	}
+	for _, identValue := range dV {
+		identCodeText, randomKey := PackB32(prefixText, &identMasks, identValue)
+		unpackedIdentValue, unpackedRandomKey, err := UnpackB32(prefixText, &identMasks, identCodeText)
+		if err != nil {
+			t.Fatalf("UnpackB32 failed: %v", err)
+		}
+		if identValue != unpackedIdentValue {
+			t.Errorf("expected identValue %d, got %d", identValue, unpackedIdentValue)
+		}
+		if randomKey != unpackedRandomKey {
+			t.Errorf("expected randomKey %d, got %d", randomKey, unpackedRandomKey)
+		}
+	}
+}

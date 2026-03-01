@@ -1,0 +1,49 @@
+package identcode6331
+
+import (
+	"bytes"
+	"fmt"
+
+	identcode "github.com/nangantata/go-identcode"
+	"github.com/nangantata/go-identcode/internal"
+)
+
+func PackB62(prefixText string, identMasks *[16]uint64, identValue int64) (identCodeText string, randomKey int32) {
+	randomKey = internal.GenerateNonZeroRandomKey31()
+	prefixBytes := []byte(prefixText)
+	prefixLen := len(prefixBytes)
+	resultBuf := make([]byte, prefixLen, prefixLen+internal.Uint64Base62EncodedLen+internal.Uint32Base62EncodedLen)
+	copy(resultBuf, prefixBytes)
+	maskedIdentValue := uint64(identValue) ^ (*identMasks)[int(randomKey&0xF)]
+	resultBuf = internal.Base62AppendEncodeUint64(resultBuf, maskedIdentValue)
+	resultBuf = internal.Base62AppendEncodeUint32(resultBuf, uint32(randomKey))
+	identCodeText = string(resultBuf)
+	return
+}
+
+func UnpackB62(prefixText string, identMasks *[16]uint64, identCodeText string) (identValue int64, randomKey int32, err error) {
+	prefixBytes := []byte(prefixText)
+	identCodeBytes := []byte(identCodeText)
+	if !bytes.HasPrefix(identCodeBytes, prefixBytes) {
+		err = identcode.ErrPrefixNotMatch
+		return
+	}
+	prefixLen := len(prefixBytes)
+	if (len(identCodeBytes) - prefixLen) != (internal.Uint64Base62EncodedLen + internal.Uint32Base62EncodedLen) {
+		err = identcode.ErrEncodedLengthNotMatch
+		return
+	}
+	maskedIdentValue, err := internal.Base62DecodeUint64(identCodeBytes[prefixLen:])
+	if err != nil {
+		err = fmt.Errorf("cannot decode ident value: %w", err)
+		return
+	}
+	rawRandomKey, err := internal.Base62DecodeUint32(identCodeBytes[prefixLen+internal.Uint64Base62EncodedLen:])
+	if err != nil {
+		err = fmt.Errorf("cannot decode random key: %w", err)
+		return
+	}
+	identValue = int64(maskedIdentValue ^ (*identMasks)[int(rawRandomKey&0xF)])
+	randomKey = int32(rawRandomKey)
+	return
+}
