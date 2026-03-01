@@ -9,6 +9,7 @@ import (
 func TestPackUnpackB32(t *testing.T) {
 	prefixText := "test-"
 	seed := []byte("test-seed")
+	expectIdentCodeTextLen := len(prefixText) + IdentCodeB32Len
 	identMasks := MakeIdentMask(seed)
 	dV := []int64{
 		0,
@@ -22,6 +23,9 @@ func TestPackUnpackB32(t *testing.T) {
 	}
 	for _, identValue := range dV {
 		identCodeText, randomKey := PackB32(prefixText, &identMasks, identValue)
+		if len(identCodeText) != expectIdentCodeTextLen {
+			t.Errorf("expected identCodeText length %d, got %d", expectIdentCodeTextLen, len(identCodeText))
+		}
 		unpackedIdentValue, unpackedRandomKey, err := UnpackB32(prefixText, &identMasks, identCodeText)
 		if err != nil {
 			t.Fatalf("UnpackB32 failed: %v", err)
