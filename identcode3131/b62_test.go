@@ -38,3 +38,26 @@ func TestPackUnpackB62(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkUnpackB62(b *testing.B) {
+	prefixText := "test-"
+	seed := []byte("test-seed")
+	identMasks := MakeIdentMask(seed)
+	identCodeTexts := make([]string, 512)
+	for idx := range 512 {
+		identValue := rand.Int32()
+		identCodeTxt, _ := PackB62(prefixText, &identMasks, identValue)
+		identCodeTexts[idx] = identCodeTxt
+	}
+	b.Logf("0> [%s]", identCodeTexts[0])
+	targetIndex := 0
+	for b.Loop() {
+		b.StopTimer()
+		targetIdentCodeText := identCodeTexts[targetIndex]
+		targetIndex = (targetIndex + 1) % len(identCodeTexts)
+		b.StartTimer()
+		if _, _, err := UnpackB62(prefixText, &identMasks, targetIdentCodeText); err != nil {
+			b.Fatalf("unpack identCode failed: %v", err)
+		}
+	}
+}
